@@ -1,0 +1,221 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg">
+    <div class="container mx-auto max-w-4xl">
+      <button mat-icon-button (click)="goBack()" class="text-white mb-2">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 class="text-2xl font-bold">Details du Colis</h1>
+      @if (parcel()) {
+        <p class="text-white/80 font-mono text-sm">ID: {{ parcel()!.id }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="container mx-auto p-4 max-w-4xl">
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="flex justify-center items-center py-12">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+    }
+
+    @if (!loading() && parcel()) {
+      <!-- Status Update Actions -->
+      @if (getAvailableTransitions().length > 0) {
+        <mat-card class="mb-4 shadow-lg border-l-4 border-indigo-500">
+          <mat-card-content class="p-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">
+              <mat-icon class="align-middle mr-2 text-indigo-600">touch_app</mat-icon>
+              Actions disponibles
+            </h3>
+            <div class="flex flex-wrap gap-3">
+              @for (transition of getAvailableTransitions(); track transition.next) {
+                <button
+                  mat-raised-button
+                  [color]="transition.color"
+                  (click)="updateStatus(transition.next)"
+                  [disabled]="updating()"
+                  class="h-12 px-6">
+                  @if (updating()) {
+                    <mat-spinner diameter="20" class="inline-block mr-2"></mat-spinner>
+                  } @else {
+                    <mat-icon class="mr-2">{{ transition.icon }}</mat-icon>
+                  }
+                  {{ transition.label }}
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Delivered Success Message -->
+      @if (parcel()!.status === 'DELIVERED') {
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded-r-lg flex items-center">
+          <mat-icon class="text-green-500 mr-3 text-3xl">check_circle</mat-icon>
+          <div>
+            <p class="font-semibold text-green-800 text-lg">Colis livre avec succes!</p>
+            <p class="text-green-600 text-sm">Ce colis a ete livre au destinataire.</p>
+          </div>
+        </div>
+      }
+
+      <!-- Main Info Card -->
+      <mat-card class="mb-4 shadow-lg">
+        <!-- Status Header -->
+        <div class="p-4 text-white" [class]="getStatusColor(parcel()!.status)">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <mat-icon class="text-3xl mr-3">{{ getStatusIcon(parcel()!.status) }}</mat-icon>
+              <div>
+                <p class="text-white/80 text-sm">Statut actuel</p>
+                <p class="text-2xl font-bold">{{ parcel()!.statusDisplay }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-white/80 text-sm">Priorite</p>
+              <div class="flex items-center justify-end">
+                <mat-icon class="mr-1">{{ getPriorityIcon(parcel()!.priority) }}</mat-icon>
+                <span class="font-semibold">{{ parcel()!.priorityDisplay }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <mat-card-content class="p-4">
+          <!-- Recipient Info - Most Important for Livreur -->
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+              <mat-icon class="mr-2 text-indigo-600">person</mat-icon>
+              Destinataire
+            </h3>
+            <div class="space-y-2">
+              <p class="text-xl font-bold text-gray-800">{{ parcel()!.recipientName }}</p>
+
+              <!-- Phone with call button -->
+              @if (parcel()!.recipientPhone) {
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center text-gray-600">
+                    <mat-icon class="mr-2 text-sm">phone</mat-icon>
+                    <span>{{ parcel()!.recipientPhone }}</span>
+                  </div>
+                  <button mat-stroked-button color="primary" (click)="callRecipient()">
+                    <mat-icon>call</mat-icon>
+                    Appeler
+                  </button>
+                </div>
+              }
+
+              <!-- Address with maps button -->
+              <div class="flex items-start justify-between mt-3">
+                <div class="flex items-start text-gray-600 flex-1">
+                  <mat-icon class="mr-2 mt-1">location_on</mat-icon>
+                  <div>
+                    <p class="font-medium">{{ parcel()!.destinationCity }}</p>
+                    <p class="text-sm">{{ parcel()!.recipientAddress }}</p>
+                  </div>
+                </div>
+                <button mat-stroked-button color="accent" (click)="openMaps()" class="ml-4">
+                  <mat-icon>map</mat-icon>
+                  Maps
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <mat-divider class="my-4"></mat-divider>
+
+          <!-- Parcel Info -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">Description</p>
+              <p class="text-gray-800">{{ parcel()!.description || 'Non specifiee' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Poids</p>
+              <p class="text-gray-800">{{ parcel()!.weight }} kg</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Zone</p>
+              <p class="text-gray-800">{{ parcel()!.zoneName || 'Non assignee' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Expediteur</p>
+              <p class="text-gray-800">{{ parcel()!.senderClientName }}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Progress Timeline -->
+      <mat-card class="mb-4 shadow-lg">
+        <mat-card-content class="p-4">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Progression</h3>
+
+          <div class="relative">
+            <!-- Timeline Line -->
+            <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+            <!-- Timeline Steps -->
+            <div class="space-y-4">
+              @for (step of timelineSteps; track step.status; let i = $index) {
+                <div class="relative flex items-center">
+                  <!-- Step Circle -->
+                  <div
+                    class="relative z-10 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300"
+                    [class]="isStepCompleted(i) ? getStatusColor(step.status) + ' text-white shadow-lg' : 'bg-gray-200 text-gray-400'">
+                    <mat-icon>{{ step.icon }}</mat-icon>
+                  </div>
+
+                  <!-- Step Content -->
+                  <div class="ml-4 flex-1">
+                    <p class="font-semibold" [class]="isStepCompleted(i) ? 'text-gray-800' : 'text-gray-400'">
+                      {{ step.label }}
+                    </p>
+                    @if (isStepActive(i)) {
+                      <p class="text-sm text-indigo-600 font-medium">Etape actuelle</p>
+                    }
+                  </div>
+
+                  <!-- Checkmark for completed -->
+                  @if (isStepCompleted(i) && !isStepActive(i)) {
+                    <mat-icon class="text-green-500">check_circle</mat-icon>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Delivery History -->
+      @if (trackingHistory().length > 0) {
+        <mat-card class="shadow-lg">
+          <mat-card-content class="p-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Historique</h3>
+            <div class="space-y-3">
+              @for (event of trackingHistory(); track event.id) {
+                <div class="flex items-start p-3 bg-gray-50 rounded-lg">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                       [class]="getStatusColor(event.status) + ' text-white'">
+                    <mat-icon class="text-sm">{{ getStatusIcon(event.status) }}</mat-icon>
+                  </div>
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <p class="font-semibold text-gray-800">{{ event.statusDisplay }}</p>
+                      <p class="text-xs text-gray-500">{{ event.changedAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                    </div>
+                    @if (event.comment) {
+                      <p class="text-sm text-gray-600">{{ event.comment }}</p>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    }
+  </div>
+</div>

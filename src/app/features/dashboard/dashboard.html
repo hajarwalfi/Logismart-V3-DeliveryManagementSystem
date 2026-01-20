@@ -1,0 +1,53 @@
+<mat-toolbar color="primary" class="shadow-md">
+  <span class="text-xl font-bold">Logismart - Dashboard</span>
+  <span class="flex-1"></span>
+  <button mat-button (click)="onLogout()" class="hover:bg-white/10">
+    Déconnexion
+  </button>
+</mat-toolbar>
+
+<div class="container mx-auto p-6 max-w-7xl">
+  <mat-card class="mb-6 shadow-lg">
+    <mat-card-header>
+      <mat-card-title class="text-2xl font-bold text-gray-800">Bienvenue sur Logismart</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="mt-4">
+      @if (isAuthenticated()) {
+        <p class="text-lg text-gray-700">Vous êtes connecté avec succès!</p>
+        <p class="text-sm text-gray-500 italic mt-2">Cette page est protégée par le guard d'authentification.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="shadow-lg">
+    <mat-card-header>
+      <mat-card-title class="text-xl font-bold text-gray-800">Fonctionnalités à venir</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="mt-4">
+      <ul class="space-y-3">
+        <li class="flex items-center py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full mr-3"></span>
+          <span class="text-gray-700">Gestion des colis</span>
+        </li>
+        <li class="flex items-center py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full mr-3"></span>
+          <span class="text-gray-700">Suivi des livraisons</span>
+        </li>
+        <li class="flex items-center py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full mr-3"></span>
+          <span class="text-gray-700">Gestion des zones</span>
+        </li>
+        <li class="flex items-center py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full mr-3"></span>
+          <span class="text-gray-700">Statistiques</span>
+        </li>
+        <li class="flex items-center py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full mr-3"></span>
+          <span class="text-gray-700">Gestion des utilisateurs</span>
+        </li>
+      </ul>
+    </mat-card-content>
+  </mat-card>
+</div>

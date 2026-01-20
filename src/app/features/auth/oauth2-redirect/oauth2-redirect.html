@@ -1,0 +1,25 @@
+<div class="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+  <mat-card class="w-full max-w-lg p-12 shadow-2xl text-center">
+    <mat-card-content>
+      @if (isProcessing) {
+        <div class="flex flex-col items-center gap-6">
+          <mat-spinner diameter="50"></mat-spinner>
+          <h2 class="text-2xl font-bold text-gray-800">Authentification en cours...</h2>
+          <p class="text-gray-600">Veuillez patienter pendant que nous finalisons votre connexion</p>
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="flex flex-col items-center gap-6">
+          <svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+            <path stroke-linecap="round" stroke-width="2" d="M15 9l-6 6m0-6l6 6"/>
+          </svg>
+          <h2 class="text-2xl font-bold text-gray-800">Erreur d'authentification</h2>
+          <p class="text-gray-700">{{ errorMessage }}</p>
+          <p class="text-sm text-gray-500 italic">Redirection vers la page de connexion...</p>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

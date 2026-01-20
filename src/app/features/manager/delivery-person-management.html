@@ -1,0 +1,324 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <button (click)="goBack()"
+                class="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 text-secondary-600 hover:bg-secondary-200 transition-colors">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-success-500 to-success-600 shadow-lg shadow-success-500/25">
+          <mat-icon class="text-white">local_shipping</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-secondary-900">Gestion des Livreurs</h1>
+          <p class="text-sm text-secondary-500">{{ totalElements() }} livreurs au total</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button (click)="openCreateForm()"
+                class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-success-500 to-success-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-success-500/25 hover:shadow-xl hover:shadow-success-500/30 transition-all">
+          <mat-icon class="text-lg">add</mat-icon>
+          Nouveau Livreur
+        </button>
+        <button (click)="loadData()"
+                class="flex items-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-200 transition-colors">
+          <mat-icon class="text-lg">refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Create/Edit Form -->
+    @if (isCreating() || isEditing()) {
+      <div class="mb-6 rounded-2xl bg-white p-6 shadow-card border-l-4 border-success-500 animate-fade-in">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-100 text-success-600">
+            <mat-icon>{{ isCreating() ? 'person_add' : 'edit' }}</mat-icon>
+          </div>
+          <h2 class="text-lg font-semibold text-secondary-900">
+            {{ isCreating() ? 'Nouveau Livreur' : 'Modifier le Livreur' }}
+          </h2>
+        </div>
+
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Prénom *</mat-label>
+              <input matInput [ngModel]="formFirstName()" (ngModelChange)="formFirstName.set($event)" placeholder="Prénom du livreur">
+              <mat-icon matPrefix class="text-secondary-400">person</mat-icon>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Nom *</mat-label>
+              <input matInput [ngModel]="formLastName()" (ngModelChange)="formLastName.set($event)" placeholder="Nom du livreur">
+              <mat-icon matPrefix class="text-secondary-400">person</mat-icon>
+            </mat-form-field>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Téléphone *</mat-label>
+              <input matInput [ngModel]="formPhone()" (ngModelChange)="formPhone.set($event)" placeholder="06XXXXXXXX">
+              <mat-icon matPrefix class="text-secondary-400">phone</mat-icon>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Type de véhicule</mat-label>
+              <mat-select [ngModel]="formVehicle()" (ngModelChange)="formVehicle.set($event)">
+                <mat-option value="">Aucun</mat-option>
+                @for (type of vehicleTypes; track type) {
+                  <mat-option [value]="type">
+                    <div class="flex items-center gap-2">
+                      <mat-icon class="text-lg">{{ getVehicleIcon(type) }}</mat-icon>
+                      {{ type }}
+                    </div>
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix class="text-secondary-400">directions_car</mat-icon>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Zone assignée</mat-label>
+              <mat-select [ngModel]="formZoneId()" (ngModelChange)="formZoneId.set($event)">
+                <mat-option value="">Aucune zone</mat-option>
+                @for (zone of zones(); track zone.id) {
+                  <mat-option [value]="zone.id">{{ zone.name }}</mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix class="text-secondary-400">location_on</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-secondary-100">
+          <button (click)="cancelForm()"
+                  class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-secondary-600 hover:bg-secondary-100 transition-colors">
+            <mat-icon class="text-lg">close</mat-icon>
+            Annuler
+          </button>
+          <button (click)="savePerson()" [disabled]="saving()"
+                  class="flex items-center gap-2 rounded-lg bg-success-600 px-4 py-2 text-sm font-medium text-white hover:bg-success-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <mat-icon class="text-lg">{{ saving() ? 'hourglass_empty' : 'save' }}</mat-icon>
+            {{ saving() ? 'Enregistrement...' : (isCreating() ? 'Créer' : 'Enregistrer') }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Filters -->
+    @if (!isCreating() && !isEditing()) {
+      <div class="mb-6 rounded-2xl bg-white p-5 shadow-card border border-secondary-100">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-secondary-700 uppercase tracking-wide">Filtres</h2>
+          <button (click)="clearFilters()"
+                  class="flex items-center gap-1 text-sm text-secondary-500 hover:text-danger-600 transition-colors">
+            <mat-icon class="text-lg">clear</mat-icon>
+            Réinitialiser
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Search -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Rechercher</mat-label>
+            <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); applyFilters()" placeholder="Nom, téléphone...">
+            <mat-icon matPrefix class="text-secondary-400">search</mat-icon>
+          </mat-form-field>
+
+          <!-- Zone Filter -->
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Zone</mat-label>
+            <mat-select [ngModel]="selectedZone()" (ngModelChange)="selectedZone.set($event); applyFilters()">
+              <mat-option value="">Toutes les zones</mat-option>
+              @for (zone of zones(); track zone.id) {
+                <mat-option [value]="zone.id">{{ zone.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Filter Chips -->
+          <div class="flex items-center gap-2 md:col-span-2">
+            <button (click)="showUnassignedOnly.set(!showUnassignedOnly()); applyFilters()"
+                    class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                    [ngClass]="showUnassignedOnly() ? 'bg-warning-100 text-warning-700 ring-2 ring-warning-400' : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'">
+              <mat-icon class="text-lg">location_off</mat-icon>
+              Sans zone
+            </button>
+            <button (click)="showAvailableOnly.set(!showAvailableOnly()); applyFilters()"
+                    class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                    [ngClass]="showAvailableOnly() ? 'bg-success-100 text-success-700 ring-2 ring-success-400' : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'">
+              <mat-icon class="text-lg">check_circle</mat-icon>
+              Disponibles
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Loading -->
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center py-24 gap-4">
+        <div class="h-12 w-12 rounded-full border-4 border-success-200 border-t-success-600 animate-spin"></div>
+        <p class="text-secondary-500 font-medium">Chargement des livreurs...</p>
+      </div>
+    }
+
+    <!-- Table -->
+    @if (!loading() && !isCreating() && !isEditing() && paginatedPersons().length > 0) {
+      <div class="rounded-2xl bg-white shadow-card border border-secondary-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table mat-table [dataSource]="paginatedPersons()" class="w-full">
+            <!-- Name -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Livreur</th>
+              <td mat-cell *matCellDef="let person">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white font-semibold text-sm">
+                    {{ person.firstName?.charAt(0) }}{{ person.lastName?.charAt(0) }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-secondary-900">{{ person.fullName }}</p>
+                    <p class="text-xs text-secondary-500">ID: {{ person.id | slice:0:8 }}...</p>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Phone -->
+            <ng-container matColumnDef="phone">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Téléphone</th>
+              <td mat-cell *matCellDef="let person">
+                <div class="flex items-center gap-2 text-secondary-600">
+                  <mat-icon class="text-lg text-secondary-400">phone</mat-icon>
+                  <span>{{ person.phone }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Vehicle -->
+            <ng-container matColumnDef="vehicle">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Véhicule</th>
+              <td mat-cell *matCellDef="let person">
+                @if (person.vehicle) {
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-100 text-primary-700 px-2.5 py-1 text-xs font-medium">
+                    <mat-icon class="text-base">{{ getVehicleIcon(person.vehicle) }}</mat-icon>
+                    {{ person.vehicle }}
+                  </span>
+                } @else {
+                  <span class="text-secondary-400 text-sm">Non défini</span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Zone -->
+            <ng-container matColumnDef="zone">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Zone</th>
+              <td mat-cell *matCellDef="let person">
+                @if (person.assignedZoneName) {
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-success-100 text-success-700 px-2.5 py-1 text-xs font-medium">
+                    <mat-icon class="text-base">location_on</mat-icon>
+                    {{ person.assignedZoneName }}
+                  </span>
+                } @else {
+                  <button [matMenuTriggerFor]="zoneMenu"
+                          class="inline-flex items-center gap-1.5 rounded-full bg-warning-100 text-warning-700 px-2.5 py-1 text-xs font-medium hover:bg-warning-200 transition-colors">
+                    <mat-icon class="text-base">add_location</mat-icon>
+                    Assigner
+                  </button>
+                  <mat-menu #zoneMenu="matMenu">
+                    @for (zone of zones(); track zone.id) {
+                      <button mat-menu-item (click)="assignZone(person, zone.id)">
+                        <mat-icon>location_on</mat-icon>
+                        <span>{{ zone.name }}</span>
+                      </button>
+                    }
+                  </mat-menu>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Status -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Statut</th>
+              <td mat-cell *matCellDef="let person">
+                @if (person.available) {
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-success-100 text-success-700 px-2.5 py-1 text-xs font-medium">
+                    <span class="h-2 w-2 rounded-full bg-success-500"></span>
+                    Disponible
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-warning-100 text-warning-700 px-2.5 py-1 text-xs font-medium">
+                    <span class="h-2 w-2 rounded-full bg-warning-500"></span>
+                    Occupé
+                  </span>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Actions -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Actions</th>
+              <td mat-cell *matCellDef="let person">
+                <div class="flex items-center gap-1">
+                  <button (click)="openEditForm(person)"
+                          class="flex h-8 w-8 items-center justify-center rounded-lg text-primary-600 hover:bg-primary-50 transition-colors"
+                          matTooltip="Modifier">
+                    <mat-icon class="text-lg">edit</mat-icon>
+                  </button>
+                  @if (person.hasAssignedZone) {
+                    <button [matMenuTriggerFor]="changeZoneMenu"
+                            class="flex h-8 w-8 items-center justify-center rounded-lg text-warning-600 hover:bg-warning-50 transition-colors"
+                            matTooltip="Changer de zone">
+                      <mat-icon class="text-lg">edit_location</mat-icon>
+                    </button>
+                    <mat-menu #changeZoneMenu="matMenu">
+                      @for (zone of zones(); track zone.id) {
+                        <button mat-menu-item (click)="assignZone(person, zone.id)" [disabled]="zone.id === person.assignedZoneId">
+                          <mat-icon>location_on</mat-icon>
+                          <span>{{ zone.name }}</span>
+                        </button>
+                      }
+                    </mat-menu>
+                  }
+                  <button (click)="deletePerson(person)"
+                          class="flex h-8 w-8 items-center justify-center rounded-lg text-danger-600 hover:bg-danger-50 transition-colors"
+                          matTooltip="Supprimer">
+                    <mat-icon class="text-lg">delete</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                class="hover:!bg-secondary-50 transition-colors"
+                [class.!bg-warning-50]="!row.hasAssignedZone">
+            </tr>
+          </table>
+        </div>
+
+        <div class="border-t border-secondary-100">
+          <mat-paginator
+            [length]="totalElements()"
+            [pageSize]="pageSize()"
+            [pageIndex]="currentPage()"
+            [pageSizeOptions]="[10, 25, 50]"
+            (page)="onPageChange($event)"
+            showFirstLastButtons>
+          </mat-paginator>
+        </div>
+      </div>
+    }
+
+    <!-- No Results -->
+    @if (!loading() && !isCreating() && !isEditing() && paginatedPersons().length === 0) {
+      <div class="rounded-2xl bg-white shadow-card border border-secondary-100 text-center py-16">
+        <mat-icon class="text-6xl text-secondary-300 mb-4">person_off</mat-icon>
+        <h3 class="text-xl font-semibold text-secondary-700 mb-2">Aucun livreur trouvé</h3>
+        <p class="text-secondary-500 mb-6">Modifiez vos filtres ou ajoutez un nouveau livreur.</p>
+        <button (click)="openCreateForm()"
+                class="inline-flex items-center gap-2 rounded-lg bg-success-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-700 transition-colors">
+          <mat-icon>add</mat-icon>
+          Ajouter un livreur
+        </button>
+      </div>
+    }
+  </div>
+</div>

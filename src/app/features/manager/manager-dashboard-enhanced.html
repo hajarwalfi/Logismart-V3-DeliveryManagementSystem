@@ -1,0 +1,497 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50">
+  <!-- Sidebar -->
+  <aside class="fixed left-0 top-0 z-40 h-screen w-64 bg-secondary-900 text-white transition-transform -translate-x-full lg:translate-x-0">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-secondary-700">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg">
+        <mat-icon class="text-white">local_shipping</mat-icon>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold">LogiSmart</h1>
+        <p class="text-xs text-secondary-400">Delivery Management</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="mt-6 px-3">
+      <p class="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-secondary-500">Menu Principal</p>
+
+      <a routerLink="/manager/dashboard"
+         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-primary-600/20 text-primary-400 mb-1">
+        <mat-icon class="text-xl">dashboard</mat-icon>
+        Dashboard
+      </a>
+
+      <a routerLink="/manager/parcels"
+         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-secondary-300 hover:bg-secondary-800 hover:text-white transition-colors mb-1">
+        <mat-icon class="text-xl">inventory_2</mat-icon>
+        Colis
+      </a>
+
+      <a routerLink="/manager/delivery-persons"
+         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-secondary-300 hover:bg-secondary-800 hover:text-white transition-colors mb-1">
+        <mat-icon class="text-xl">local_shipping</mat-icon>
+        Livreurs
+      </a>
+
+      <a routerLink="/manager/zones"
+         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-secondary-300 hover:bg-secondary-800 hover:text-white transition-colors mb-1">
+        <mat-icon class="text-xl">map</mat-icon>
+        Zones
+      </a>
+
+      <a routerLink="/manager/clients"
+         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-secondary-300 hover:bg-secondary-800 hover:text-white transition-colors mb-1">
+        <mat-icon class="text-xl">people</mat-icon>
+        Clients
+      </a>
+
+      <div class="mt-6 border-t border-secondary-700 pt-6">
+        <p class="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-secondary-500">Compte</p>
+        <button (click)="onLogout()"
+                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-secondary-300 hover:bg-danger-600/20 hover:text-danger-400 transition-colors">
+          <mat-icon class="text-xl">logout</mat-icon>
+          Déconnexion
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="lg:ml-64">
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-secondary-200">
+      <div class="flex items-center justify-between px-6 py-4">
+        <div>
+          <h1 class="text-2xl font-bold text-secondary-900">Dashboard</h1>
+          <p class="text-sm text-secondary-500">Bienvenue, {{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</p>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button (click)="refresh()"
+                  class="flex items-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-200 transition-colors">
+            <mat-icon class="text-lg">refresh</mat-icon>
+            Actualiser
+          </button>
+
+          <div class="flex items-center gap-3 rounded-full bg-secondary-100 pl-3 pr-1 py-1">
+            <span class="text-sm font-medium text-secondary-700">{{ currentUser()?.firstName }}</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+              <mat-icon class="text-lg">person</mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div class="relative">
+        <div class="h-16 w-16 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div>
+      </div>
+      <p class="text-secondary-500 font-medium">Chargement des données...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error()" class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-danger-100">
+        <mat-icon class="text-danger-600 text-3xl">error_outline</mat-icon>
+      </div>
+      <p class="text-secondary-700 font-medium">{{ error() }}</p>
+      <button (click)="refresh()"
+              class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Dashboard Content -->
+    <main *ngIf="!loading() && !error()" class="p-6 animate-fade-in">
+
+      <!-- KPI Cards Grid -->
+      <section class="mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Parcels -->
+          <div (click)="navigateTo('/manager/parcels')"
+               class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer border border-secondary-100">
+            <div class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-gradient-to-br from-primary-500/10 to-primary-600/10"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
+                  <mat-icon class="text-white">inventory_2</mat-icon>
+                </div>
+                <mat-icon class="text-secondary-300 group-hover:text-primary-500 transition-colors">arrow_forward</mat-icon>
+              </div>
+              <p class="text-sm font-medium text-secondary-500 mb-1">Total Colis</p>
+              <p class="text-3xl font-bold text-secondary-900">{{ globalStats()?.totalParcels || 0 }}</p>
+            </div>
+          </div>
+
+          <!-- Deliveries Today -->
+          <div (click)="navigateTo('/manager/parcels')"
+               class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer border border-secondary-100">
+            <div class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-gradient-to-br from-success-500/10 to-success-600/10"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-success-500 to-success-600 shadow-lg shadow-success-500/25">
+                  <mat-icon class="text-white">check_circle</mat-icon>
+                </div>
+                <mat-icon class="text-secondary-300 group-hover:text-success-500 transition-colors">arrow_forward</mat-icon>
+              </div>
+              <p class="text-sm font-medium text-secondary-500 mb-1">Livraisons Aujourd'hui</p>
+              <p class="text-3xl font-bold text-secondary-900">{{ deliveriesToday() }}</p>
+            </div>
+          </div>
+
+          <!-- Unassigned Parcels -->
+          <div (click)="navigateTo('/manager/parcels')"
+               class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer border border-secondary-100"
+               [class.ring-2]="unassignedCount() > 0"
+               [class.ring-warning-400]="unassignedCount() > 0">
+            <div class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-gradient-to-br from-warning-500/10 to-warning-600/10"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-warning-500 to-warning-600 shadow-lg shadow-warning-500/25">
+                  <mat-icon class="text-white">warning</mat-icon>
+                </div>
+                <span *ngIf="unassignedCount() > 0" class="flex h-3 w-3 relative">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning-400 opacity-75"></span>
+                  <span class="relative inline-flex h-3 w-3 rounded-full bg-warning-500"></span>
+                </span>
+              </div>
+              <p class="text-sm font-medium text-secondary-500 mb-1">Non Assignés</p>
+              <p class="text-3xl font-bold text-secondary-900">{{ unassignedCount() }}</p>
+            </div>
+          </div>
+
+          <!-- Urgent Parcels -->
+          <div (click)="navigateTo('/manager/parcels')"
+               class="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer border border-secondary-100"
+               [class.ring-2]="highPriorityCount() > 0"
+               [class.ring-danger-400]="highPriorityCount() > 0">
+            <div class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-gradient-to-br from-danger-500/10 to-danger-600/10"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-danger-500 to-danger-600 shadow-lg shadow-danger-500/25">
+                  <mat-icon class="text-white">bolt</mat-icon>
+                </div>
+                <span *ngIf="highPriorityCount() > 0" class="flex h-3 w-3 relative">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger-400 opacity-75"></span>
+                  <span class="relative inline-flex h-3 w-3 rounded-full bg-danger-500"></span>
+                </span>
+              </div>
+              <p class="text-sm font-medium text-secondary-500 mb-1">Colis Urgents</p>
+              <p class="text-3xl font-bold text-secondary-900">{{ highPriorityCount() }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Secondary Stats Row -->
+      <section class="mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Zones -->
+          <div (click)="navigateTo('/manager/zones')"
+               class="group flex items-center gap-4 rounded-xl bg-white p-4 shadow-card hover:shadow-card-hover transition-all cursor-pointer border border-secondary-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+              <mat-icon>map</mat-icon>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-secondary-500">Zones Actives</p>
+              <p class="text-xl font-bold text-secondary-900">{{ globalStats()?.totalZones || 0 }}</p>
+            </div>
+            <mat-icon class="text-secondary-300 group-hover:text-primary-500 transition-colors">chevron_right</mat-icon>
+          </div>
+
+          <!-- Delivery Persons -->
+          <div (click)="navigateTo('/manager/delivery-persons')"
+               class="group flex items-center gap-4 rounded-xl bg-white p-4 shadow-card hover:shadow-card-hover transition-all cursor-pointer border border-secondary-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-100 text-success-600">
+              <mat-icon>local_shipping</mat-icon>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-secondary-500">Livreurs</p>
+              <p class="text-xl font-bold text-secondary-900">{{ globalStats()?.totalDeliveryPersons || 0 }}</p>
+            </div>
+            <mat-icon class="text-secondary-300 group-hover:text-success-500 transition-colors">chevron_right</mat-icon>
+          </div>
+
+          <!-- Clients -->
+          <div (click)="navigateTo('/manager/clients')"
+               class="group flex items-center gap-4 rounded-xl bg-white p-4 shadow-card hover:shadow-card-hover transition-all cursor-pointer border border-secondary-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-100 text-warning-600">
+              <mat-icon>people</mat-icon>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-secondary-500">Clients</p>
+              <p class="text-xl font-bold text-secondary-900">{{ globalStats()?.totalSenderClients || 0 }}</p>
+            </div>
+            <mat-icon class="text-secondary-300 group-hover:text-warning-500 transition-colors">chevron_right</mat-icon>
+          </div>
+
+          <!-- Total Weight -->
+          <div class="flex items-center gap-4 rounded-xl bg-white p-4 shadow-card border border-secondary-100">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 text-secondary-600">
+              <mat-icon>scale</mat-icon>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-secondary-500">Poids Total</p>
+              <p class="text-xl font-bold text-secondary-900">{{ globalStats()?.totalWeight?.toFixed(1) || 0 }} kg</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Parcels by Status -->
+        <div class="rounded-2xl bg-white p-6 shadow-card border border-secondary-100">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-secondary-900">Colis par Statut</h3>
+            <button (click)="navigateTo('/manager/parcels')"
+                    class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+              Voir tout
+            </button>
+          </div>
+          <div class="space-y-4">
+            <div *ngFor="let status of ['CREATED', 'COLLECTED', 'IN_STOCK', 'IN_TRANSIT', 'DELIVERED']"
+                 class="flex items-center gap-3">
+              <div class="flex h-8 w-8 items-center justify-center rounded-lg"
+                   [ngClass]="{
+                     'bg-secondary-100 text-secondary-600': status === 'CREATED',
+                     'bg-primary-100 text-primary-600': status === 'COLLECTED' || status === 'IN_TRANSIT',
+                     'bg-warning-100 text-warning-600': status === 'IN_STOCK',
+                     'bg-success-100 text-success-600': status === 'DELIVERED'
+                   }">
+                <mat-icon class="text-lg">
+                  {{ status === 'CREATED' ? 'add_circle' :
+                     status === 'COLLECTED' ? 'inventory_2' :
+                     status === 'IN_STOCK' ? 'warehouse' :
+                     status === 'IN_TRANSIT' ? 'local_shipping' : 'check_circle' }}
+                </mat-icon>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-secondary-700">{{ getStatusLabel(status) }}</span>
+                  <span class="text-sm font-semibold text-secondary-900">{{ getStatusCount(status) }}</span>
+                </div>
+                <div class="h-2 rounded-full bg-secondary-100 overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       [ngClass]="{
+                         'bg-secondary-400': status === 'CREATED',
+                         'bg-primary-500': status === 'COLLECTED' || status === 'IN_TRANSIT',
+                         'bg-warning-500': status === 'IN_STOCK',
+                         'bg-success-500': status === 'DELIVERED'
+                       }"
+                       [style.width.%]="globalStats()?.totalParcels ? (getStatusCount(status) / globalStats()!.totalParcels * 100) : 0">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parcels by Priority -->
+        <div class="rounded-2xl bg-white p-6 shadow-card border border-secondary-100">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-secondary-900">Colis par Priorité</h3>
+          </div>
+          <div class="space-y-4">
+            <div *ngFor="let priority of ['NORMAL', 'URGENT', 'EXPRESS']"
+                 class="flex items-center gap-3">
+              <div class="flex h-8 w-8 items-center justify-center rounded-lg"
+                   [ngClass]="{
+                     'bg-secondary-100 text-secondary-600': priority === 'NORMAL',
+                     'bg-warning-100 text-warning-600': priority === 'URGENT',
+                     'bg-danger-100 text-danger-600': priority === 'EXPRESS'
+                   }">
+                <mat-icon class="text-lg">
+                  {{ priority === 'NORMAL' ? 'schedule' : priority === 'URGENT' ? 'priority_high' : 'bolt' }}
+                </mat-icon>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-secondary-700">{{ getPriorityLabel(priority) }}</span>
+                  <span class="text-sm font-semibold text-secondary-900">{{ getPriorityCount(priority) }}</span>
+                </div>
+                <div class="h-2 rounded-full bg-secondary-100 overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       [ngClass]="{
+                         'bg-secondary-400': priority === 'NORMAL',
+                         'bg-warning-500': priority === 'URGENT',
+                         'bg-danger-500': priority === 'EXPRESS'
+                       }"
+                       [style.width.%]="globalStats()?.totalParcels ? (getPriorityCount(priority) / globalStats()!.totalParcels * 100) : 0">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerts Section -->
+          <div class="mt-6 pt-6 border-t border-secondary-100">
+            <h4 class="text-sm font-semibold text-secondary-900 mb-4">Alertes</h4>
+            <div class="space-y-3">
+              <div *ngIf="unassignedCount() > 0"
+                   class="flex items-center gap-3 rounded-lg bg-warning-50 p-3 border border-warning-200">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-warning-100">
+                  <mat-icon class="text-warning-600 text-lg">warning</mat-icon>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-warning-800">{{ unassignedCount() }} colis non assignés</p>
+                </div>
+                <button (click)="navigateTo('/manager/parcels')" class="text-warning-600 hover:text-warning-700">
+                  <mat-icon>arrow_forward</mat-icon>
+                </button>
+              </div>
+
+              <div *ngIf="highPriorityCount() > 0"
+                   class="flex items-center gap-3 rounded-lg bg-danger-50 p-3 border border-danger-200">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-danger-100">
+                  <mat-icon class="text-danger-600 text-lg">bolt</mat-icon>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-danger-800">{{ highPriorityCount() }} colis urgents en attente</p>
+                </div>
+                <button (click)="navigateTo('/manager/parcels')" class="text-danger-600 hover:text-danger-700">
+                  <mat-icon>arrow_forward</mat-icon>
+                </button>
+              </div>
+
+              <div *ngIf="unassignedCount() === 0 && highPriorityCount() === 0"
+                   class="flex items-center gap-3 rounded-lg bg-success-50 p-3 border border-success-200">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-success-100">
+                  <mat-icon class="text-success-600 text-lg">check_circle</mat-icon>
+                </div>
+                <p class="text-sm font-medium text-success-800">Aucune alerte active</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Delivery Persons -->
+        <div class="rounded-2xl bg-white p-6 shadow-card border border-secondary-100">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-secondary-900">Top Livreurs</h3>
+            <button (click)="navigateTo('/manager/delivery-persons')"
+                    class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+              Voir tout
+            </button>
+          </div>
+          <div class="space-y-4">
+            <div *ngFor="let dp of getTopDeliveryPersons(5); let i = index"
+                 class="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary-50 transition-colors">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full font-semibold text-sm"
+                   [ngClass]="{
+                     'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white': i === 0,
+                     'bg-gradient-to-br from-gray-300 to-gray-400 text-white': i === 1,
+                     'bg-gradient-to-br from-orange-400 to-orange-500 text-white': i === 2,
+                     'bg-secondary-100 text-secondary-600': i > 2
+                   }">
+                {{ i + 1 }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-secondary-900 truncate">{{ dp.deliveryPersonName }}</p>
+                <p class="text-xs text-secondary-500">{{ dp.zoneName || 'Non assigné' }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-semibold text-secondary-900">{{ (dp.successRate ?? 0).toFixed(0) }}%</p>
+                <p class="text-xs text-secondary-500">{{ dp.deliveredParcels }}/{{ dp.totalParcels }}</p>
+              </div>
+            </div>
+
+            <div *ngIf="getTopDeliveryPersons(5).length === 0"
+                 class="text-center py-8 text-secondary-500">
+              <mat-icon class="text-4xl mb-2">person_off</mat-icon>
+              <p class="text-sm">Aucun livreur</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zones Overview -->
+      <section class="mt-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-secondary-900">Aperçu des Zones</h3>
+          <button (click)="navigateTo('/manager/zones')"
+                  class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+            Gérer les zones
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let zone of getTopZones(6)"
+               class="rounded-xl bg-white p-5 shadow-card hover:shadow-card-hover transition-all border border-secondary-100">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+                <mat-icon>location_on</mat-icon>
+              </div>
+              <div>
+                <h4 class="font-semibold text-secondary-900">{{ zone.zoneName }}</h4>
+                <p class="text-xs text-secondary-500">{{ zone.totalDeliveryPersons }} livreur(s)</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="rounded-lg bg-secondary-50 p-2">
+                <p class="text-lg font-bold text-secondary-900">{{ zone.totalParcels }}</p>
+                <p class="text-xs text-secondary-500">Total</p>
+              </div>
+              <div class="rounded-lg bg-primary-50 p-2">
+                <p class="text-lg font-bold text-primary-600">{{ zone.inTransitParcels }}</p>
+                <p class="text-xs text-secondary-500">En transit</p>
+              </div>
+              <div class="rounded-lg bg-success-50 p-2">
+                <p class="text-lg font-bold text-success-600">{{ zone.deliveredParcels }}</p>
+                <p class="text-xs text-secondary-500">Livrés</p>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="getTopZones(6).length === 0"
+               class="col-span-full text-center py-12 text-secondary-500">
+            <mat-icon class="text-5xl mb-3">map</mat-icon>
+            <p>Aucune zone configurée</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="mt-6">
+        <h3 class="text-lg font-semibold text-secondary-900 mb-4">Actions Rapides</h3>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <button (click)="navigateTo('/manager/parcels')"
+                  class="group flex flex-col items-center gap-3 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 p-6 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30 transition-all hover:-translate-y-1">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
+              <mat-icon>inventory_2</mat-icon>
+            </div>
+            <span class="font-medium">Gérer les Colis</span>
+          </button>
+
+          <button (click)="navigateTo('/manager/delivery-persons')"
+                  class="group flex flex-col items-center gap-3 rounded-xl bg-gradient-to-br from-success-500 to-success-600 p-6 text-white shadow-lg shadow-success-500/25 hover:shadow-xl hover:shadow-success-500/30 transition-all hover:-translate-y-1">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
+              <mat-icon>local_shipping</mat-icon>
+            </div>
+            <span class="font-medium">Gérer les Livreurs</span>
+          </button>
+
+          <button (click)="navigateTo('/manager/zones')"
+                  class="group flex flex-col items-center gap-3 rounded-xl bg-gradient-to-br from-warning-500 to-warning-600 p-6 text-white shadow-lg shadow-warning-500/25 hover:shadow-xl hover:shadow-warning-500/30 transition-all hover:-translate-y-1">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
+              <mat-icon>map</mat-icon>
+            </div>
+            <span class="font-medium">Gérer les Zones</span>
+          </button>
+
+          <button (click)="navigateTo('/manager/clients')"
+                  class="group flex flex-col items-center gap-3 rounded-xl bg-gradient-to-br from-secondary-600 to-secondary-700 p-6 text-white shadow-lg shadow-secondary-500/25 hover:shadow-xl hover:shadow-secondary-500/30 transition-all hover:-translate-y-1">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors">
+              <mat-icon>people</mat-icon>
+            </div>
+            <span class="font-medium">Gérer les Clients</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>

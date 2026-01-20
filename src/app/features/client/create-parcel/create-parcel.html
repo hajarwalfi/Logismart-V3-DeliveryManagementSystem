@@ -1,0 +1,293 @@
+<mat-toolbar color="primary" class="shadow-md">
+  <button mat-icon-button (click)="onCancel()" matTooltip="Retour">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <span class="text-xl font-bold ml-2">Nouvelle Demande de Livraison</span>
+  <span class="flex-1"></span>
+  <span class="text-sm mr-4">{{ currentUser()?.username }}</span>
+  <button mat-button (click)="onLogout()" class="hover:bg-white/10">
+    <mat-icon>logout</mat-icon>
+    Deconnexion
+  </button>
+</mat-toolbar>
+
+<div class="container mx-auto p-6 max-w-4xl">
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  }
+
+  @if (!loading()) {
+    <form [formGroup]="parcelForm" (ngSubmit)="onSubmit()">
+      <!-- Section 1: Informations du colis -->
+      <mat-card class="mb-6 shadow-lg">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="text-primary">inventory_2</mat-icon>
+          <mat-card-title>Informations du Colis</mat-card-title>
+          <mat-card-subtitle>Details de votre envoi</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="p-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Description -->
+            <mat-form-field class="w-full md:col-span-2">
+              <mat-label>Description</mat-label>
+              <textarea
+                matInput
+                formControlName="description"
+                placeholder="Description du contenu du colis..."
+                rows="2">
+              </textarea>
+              <mat-hint>Optionnel - Max 255 caracteres</mat-hint>
+              @if (parcelForm.get('description')?.hasError('maxlength')) {
+                <mat-error>Maximum 255 caracteres</mat-error>
+              }
+            </mat-form-field>
+
+            <!-- Weight -->
+            <mat-form-field class="w-full">
+              <mat-label>Poids (kg)</mat-label>
+              <input
+                matInput
+                type="number"
+                formControlName="weight"
+                placeholder="0.00"
+                step="0.01"
+                min="0.01"
+                max="999.99">
+              <mat-icon matSuffix>scale</mat-icon>
+              @if (parcelForm.get('weight')?.hasError('required')) {
+                <mat-error>Le poids est obligatoire</mat-error>
+              }
+              @if (parcelForm.get('weight')?.hasError('min')) {
+                <mat-error>Minimum 0.01 kg</mat-error>
+              }
+              @if (parcelForm.get('weight')?.hasError('max')) {
+                <mat-error>Maximum 999.99 kg</mat-error>
+              }
+            </mat-form-field>
+
+            <!-- Priority -->
+            <mat-form-field class="w-full">
+              <mat-label>Priorite</mat-label>
+              <mat-select formControlName="priority">
+                @for (priority of priorities; track priority) {
+                  <mat-option [value]="priority">
+                    {{ priorityLabels[priority] }}
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-icon matSuffix>priority_high</mat-icon>
+            </mat-form-field>
+
+            <!-- Destination City -->
+            <mat-form-field class="w-full md:col-span-2">
+              <mat-label>Ville de destination</mat-label>
+              <input
+                matInput
+                formControlName="destinationCity"
+                placeholder="Ex: Casablanca, Rabat, Marrakech...">
+              <mat-icon matSuffix>location_city</mat-icon>
+              @if (parcelForm.get('destinationCity')?.hasError('required')) {
+                <mat-error>La ville de destination est obligatoire</mat-error>
+              }
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Section 2: Destinataire -->
+      <mat-card class="mb-6 shadow-lg">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="text-primary">person</mat-icon>
+          <mat-card-title>Destinataire</mat-card-title>
+          <mat-card-subtitle>Informations de la personne qui recevra le colis</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="p-4">
+          <div formGroupName="recipient" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <mat-form-field class="w-full">
+              <mat-label>Prenom</mat-label>
+              <input matInput formControlName="firstName" placeholder="Prenom du destinataire">
+              <mat-icon matSuffix>person</mat-icon>
+              @if (parcelForm.get('recipient.firstName')?.hasError('required')) {
+                <mat-error>Le prenom est obligatoire</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field class="w-full">
+              <mat-label>Nom</mat-label>
+              <input matInput formControlName="lastName" placeholder="Nom du destinataire">
+              <mat-icon matSuffix>person</mat-icon>
+              @if (parcelForm.get('recipient.lastName')?.hasError('required')) {
+                <mat-error>Le nom est obligatoire</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field class="w-full">
+              <mat-label>Telephone</mat-label>
+              <input matInput formControlName="phone" placeholder="+212 6XX XXX XXX">
+              <mat-icon matSuffix>phone</mat-icon>
+              @if (parcelForm.get('recipient.phone')?.hasError('required')) {
+                <mat-error>Le telephone est obligatoire</mat-error>
+              }
+              @if (parcelForm.get('recipient.phone')?.hasError('pattern')) {
+                <mat-error>Format de telephone invalide</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field class="w-full">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" placeholder="email@exemple.com" type="email">
+              <mat-icon matSuffix>email</mat-icon>
+              <mat-hint>Necessaire pour le suivi du colis</mat-hint>
+              @if (parcelForm.get('recipient.email')?.hasError('required')) {
+                <mat-error>L'email est obligatoire</mat-error>
+              }
+              @if (parcelForm.get('recipient.email')?.hasError('email')) {
+                <mat-error>Format d'email invalide</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field class="w-full md:col-span-2">
+              <mat-label>Adresse complete</mat-label>
+              <textarea
+                matInput
+                formControlName="address"
+                placeholder="Adresse de livraison complete..."
+                rows="2">
+              </textarea>
+              <mat-icon matSuffix>home</mat-icon>
+              @if (parcelForm.get('recipient.address')?.hasError('required')) {
+                <mat-error>L'adresse est obligatoire</mat-error>
+              }
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Section 3: Produits -->
+      <mat-card class="mb-6 shadow-lg">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="text-primary">shopping_cart</mat-icon>
+          <mat-card-title>Produits</mat-card-title>
+          <mat-card-subtitle>Articles a envoyer</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="p-4">
+          <div formArrayName="products">
+            @for (product of productsFormArray.controls; track $index; let i = $index) {
+              <div [formGroupName]="i" class="grid grid-cols-12 gap-4 mb-4 items-start p-4 bg-gray-50 rounded-lg">
+                <!-- Product Selection -->
+                <mat-form-field class="col-span-12 md:col-span-5">
+                  <mat-label>Produit</mat-label>
+                  <mat-select formControlName="productId" (selectionChange)="onProductSelect(i)">
+                    @for (prod of products(); track prod.id) {
+                      <mat-option [value]="prod.id">
+                        <div class="flex justify-between items-center w-full">
+                          <span>{{ prod.name }}</span>
+                          <span class="text-sm text-gray-500">{{ prod.formattedPrice }}</span>
+                        </div>
+                      </mat-option>
+                    }
+                  </mat-select>
+                  @if (productsFormArray.at(i).get('productId')?.hasError('required')) {
+                    <mat-error>Selectionnez un produit</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- Quantity -->
+                <mat-form-field class="col-span-5 md:col-span-2">
+                  <mat-label>Quantite</mat-label>
+                  <input matInput type="number" formControlName="quantity" min="1">
+                  @if (productsFormArray.at(i).get('quantity')?.hasError('required')) {
+                    <mat-error>Requis</mat-error>
+                  }
+                  @if (productsFormArray.at(i).get('quantity')?.hasError('min')) {
+                    <mat-error>Min 1</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- Price -->
+                <mat-form-field class="col-span-5 md:col-span-3">
+                  <mat-label>Prix unitaire (MAD)</mat-label>
+                  <input matInput type="number" formControlName="price" step="0.01" min="0">
+                  @if (productsFormArray.at(i).get('price')?.hasError('required')) {
+                    <mat-error>Requis</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- Remove button -->
+                <div class="col-span-2 flex items-center justify-center">
+                  <button
+                    type="button"
+                    mat-icon-button
+                    color="warn"
+                    (click)="removeProduct(i)"
+                    [disabled]="productsFormArray.length === 1"
+                    matTooltip="Supprimer ce produit">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Add product button -->
+          <button
+            type="button"
+            mat-stroked-button
+            color="primary"
+            (click)="addProduct()"
+            class="w-full mt-2">
+            <mat-icon>add</mat-icon>
+            Ajouter un produit
+          </button>
+
+          <!-- Summary -->
+          <mat-divider class="my-4"></mat-divider>
+          <div class="flex justify-between items-center text-lg">
+            <span class="font-medium">Total estime:</span>
+            <span class="font-bold text-primary">{{ calculateTotalPrice() | number:'1.2-2' }} MAD</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Actions -->
+      <div class="flex justify-between items-center">
+        <button
+          type="button"
+          mat-stroked-button
+          (click)="onCancel()"
+          [disabled]="submitting()">
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+
+        @if (submitting()) {
+          <button
+            type="submit"
+            mat-raised-button
+            color="primary"
+            disabled
+            class="px-8">
+            <mat-spinner diameter="20" class="inline-block mr-2"></mat-spinner>
+            Envoi en cours...
+          </button>
+        } @else {
+          <button
+            type="submit"
+            mat-raised-button
+            color="primary"
+            [disabled]="parcelForm.invalid"
+            class="px-8">
+            <mat-icon>send</mat-icon>
+            Creer la demande
+          </button>
+        }
+      </div>
+    </form>
+  }
+</div>

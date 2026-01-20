@@ -1,0 +1,217 @@
+<mat-toolbar color="primary" class="shadow-md">
+  <span class="text-xl font-bold">📦 Logismart - Mon Dashboard</span>
+  <span class="flex-1"></span>
+  <span class="text-sm mr-4">Bonjour, {{ currentUser()?.username }}</span>
+  <button mat-button (click)="onLogout()" class="hover:bg-white/10">
+    <mat-icon>logout</mat-icon>
+    Déconnexion
+  </button>
+</mat-toolbar>
+
+<div class="container mx-auto p-6 max-w-7xl">
+  <!-- Header Section -->
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Mes Colis</h1>
+      <p class="text-gray-600">Gerez et suivez tous vos envois en temps reel</p>
+    </div>
+    <button
+      mat-raised-button
+      color="primary"
+      routerLink="/client/parcels/create"
+      class="h-12 px-6">
+      <mat-icon>add</mat-icon>
+      Nouvelle demande
+    </button>
+  </div>
+
+  <!-- Filters Section -->
+  <mat-card class="mb-6 shadow-lg">
+    <mat-card-content class="p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-800">🔍 Filtres de recherche</h2>
+        <button mat-stroked-button color="warn" (click)="clearFilters()" class="text-sm">
+          <mat-icon class="mr-1">clear</mat-icon>
+          Réinitialiser
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Search Term -->
+        <mat-form-field class="w-full">
+          <mat-label>Rechercher</mat-label>
+          <input matInput [(ngModel)]="searchTerm" placeholder="Description, ID..." (keyup.enter)="applyFilters()">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Status Filter -->
+        <mat-form-field class="w-full">
+          <mat-label>Statut</mat-label>
+          <mat-select [(ngModel)]="selectedStatus">
+            <mat-option value="">Tous</mat-option>
+            <mat-option *ngFor="let status of parcelStatuses" [value]="status">
+              {{ status }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>local_shipping</mat-icon>
+        </mat-form-field>
+
+        <!-- Priority Filter -->
+        <mat-form-field class="w-full">
+          <mat-label>Priorité</mat-label>
+          <mat-select [(ngModel)]="selectedPriority">
+            <mat-option value="">Toutes</mat-option>
+            <mat-option *ngFor="let priority of parcelPriorities" [value]="priority">
+              {{ priority }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>priority_high</mat-icon>
+        </mat-form-field>
+
+        <!-- City Filter -->
+        <mat-form-field class="w-full">
+          <mat-label>Ville de destination</mat-label>
+          <input matInput [(ngModel)]="cityFilter" placeholder="Paris, Lyon...">
+          <mat-icon matPrefix>location_city</mat-icon>
+        </mat-form-field>
+
+        <!-- Apply Button -->
+        <div class="flex items-center">
+          <button mat-raised-button color="primary" (click)="applyFilters()" class="w-full">
+            <mat-icon>filter_list</mat-icon>
+            Appliquer les filtres
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Spinner -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  }
+
+  <!-- Parcels Table -->
+  @if (!loading() && parcels().length > 0) {
+    <mat-card class="shadow-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table mat-table [dataSource]="parcels()" class="w-full">
+          <!-- Tracking ID Column -->
+          <ng-container matColumnDef="trackingId">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">ID de Suivi</th>
+            <td mat-cell *matCellDef="let parcel" class="font-mono text-xs">
+              {{ parcel.id.substring(0, 8) }}...
+            </td>
+          </ng-container>
+
+          <!-- Description Column -->
+          <ng-container matColumnDef="description">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Description</th>
+            <td mat-cell *matCellDef="let parcel">
+              <div class="max-w-xs truncate">{{ parcel.description }}</div>
+              <div class="text-xs text-gray-500">{{ parcel.formattedWeight }}</div>
+            </td>
+          </ng-container>
+
+          <!-- Recipient Column -->
+          <ng-container matColumnDef="recipient">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Destinataire</th>
+            <td mat-cell *matCellDef="let parcel">
+              <div class="font-medium">{{ parcel.recipientName }}</div>
+            </td>
+          </ng-container>
+
+          <!-- Destination Column -->
+          <ng-container matColumnDef="destination">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Destination</th>
+            <td mat-cell *matCellDef="let parcel">
+              <div class="flex items-center">
+                <mat-icon class="text-gray-500 mr-1 text-sm">location_on</mat-icon>
+                <span>{{ parcel.destinationCity }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Statut</th>
+            <td mat-cell *matCellDef="let parcel">
+              <mat-chip-set>
+                <mat-chip [class]="getStatusColor(parcel.status) + ' text-white'">
+                  <mat-icon class="mr-1">{{ getStatusIcon(parcel.status) }}</mat-icon>
+                  {{ parcel.statusDisplay }}
+                </mat-chip>
+              </mat-chip-set>
+            </td>
+          </ng-container>
+
+          <!-- Priority Column -->
+          <ng-container matColumnDef="priority">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Priorité</th>
+            <td mat-cell *matCellDef="let parcel">
+              <div class="flex items-center" [class]="getPriorityColor(parcel.priority)">
+                <mat-icon class="text-sm mr-1">{{ getPriorityIcon(parcel.priority) }}</mat-icon>
+                <span class="text-sm font-medium">{{ parcel.priorityDisplay }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Created At Column -->
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Créé le</th>
+            <td mat-cell *matCellDef="let parcel">
+              <div class="text-sm">{{ parcel.formattedCreatedAt }}</div>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Actions</th>
+            <td mat-cell *matCellDef="let parcel">
+              <button
+                mat-icon-button
+                color="primary"
+                (click)="viewParcelDetails(parcel.id)"
+                matTooltip="Voir les détails">
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns;"
+            class="hover:bg-gray-50 cursor-pointer transition-colors"
+            (click)="viewParcelDetails(row.id)">
+          </tr>
+        </table>
+      </div>
+
+      <!-- Paginator -->
+      <mat-paginator
+        [length]="totalElements()"
+        [pageSize]="pageSize()"
+        [pageIndex]="currentPage()"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card>
+  }
+
+  <!-- No Results -->
+  @if (!loading() && parcels().length === 0) {
+    <mat-card class="shadow-lg text-center py-12">
+      <mat-icon class="text-gray-400 text-6xl mb-4">inbox</mat-icon>
+      <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun colis trouvé</h3>
+      <p class="text-gray-500 mb-4">Essayez de modifier vos filtres ou créez un nouveau colis</p>
+      <button mat-raised-button color="primary" routerLink="/client/parcels/create">
+        <mat-icon>add</mat-icon>
+        Creer un colis
+      </button>
+    </mat-card>
+  }
+</div>

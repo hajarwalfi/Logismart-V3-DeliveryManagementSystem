@@ -1,0 +1,390 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
+          <mat-icon class="text-white">people</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-secondary-900">Gestion des Clients</h1>
+          <p class="text-sm text-secondary-500">Gérer les clients expéditeurs</p>
+        </div>
+      </div>
+      <button (click)="refresh()"
+              class="flex items-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-200 transition-colors">
+        <mat-icon class="text-lg">refresh</mat-icon>
+        Actualiser
+      </button>
+    </div>
+
+    <!-- Edit Client Form -->
+    <div *ngIf="isEditing()" class="mb-6 rounded-2xl bg-white p-6 shadow-card border-l-4 border-primary-500 animate-fade-in">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+          <mat-icon>edit</mat-icon>
+        </div>
+        <h2 class="text-lg font-semibold text-secondary-900">Modifier le Client</h2>
+      </div>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Prénom</mat-label>
+            <input matInput [ngModel]="editFirstName()" (ngModelChange)="editFirstName.set($event)">
+            <mat-icon matPrefix class="text-secondary-400">person</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Nom</mat-label>
+            <input matInput [ngModel]="editLastName()" (ngModelChange)="editLastName.set($event)">
+            <mat-icon matPrefix class="text-secondary-400">person</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" [ngModel]="editEmail()" (ngModelChange)="editEmail.set($event)">
+            <mat-icon matPrefix class="text-secondary-400">email</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Téléphone</mat-label>
+            <input matInput [ngModel]="editPhone()" (ngModelChange)="editPhone.set($event)">
+            <mat-icon matPrefix class="text-secondary-400">phone</mat-icon>
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Adresse</mat-label>
+          <input matInput [ngModel]="editAddress()" (ngModelChange)="editAddress.set($event)">
+          <mat-icon matPrefix class="text-secondary-400">location_on</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-secondary-100">
+        <button (click)="cancelEdit()"
+                class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-secondary-600 hover:bg-secondary-100 transition-colors">
+          <mat-icon class="text-lg">close</mat-icon>
+          Annuler
+        </button>
+        <button (click)="saveClient()" [disabled]="saving()"
+                class="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <mat-icon class="text-lg">save</mat-icon>
+          {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- View Client Details Panel -->
+    <div *ngIf="isViewingDetails() && selectedClient()" class="mb-6 rounded-2xl bg-white shadow-card border border-secondary-100 overflow-hidden animate-fade-in">
+      <!-- Details Header -->
+      <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white">
+              <mat-icon>person</mat-icon>
+            </div>
+            <div class="text-white">
+              <h2 class="text-lg font-semibold">{{ selectedClient()?.firstName }} {{ selectedClient()?.lastName }}</h2>
+              <p class="text-sm text-white/80">Détails du client</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="editClient(selectedClient()!)"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors">
+              <mat-icon class="text-lg">edit</mat-icon>
+            </button>
+            <button (click)="closeDetails()"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors">
+              <mat-icon class="text-lg">close</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <!-- Client Info -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+              <mat-icon>email</mat-icon>
+            </div>
+            <div>
+              <p class="text-xs text-secondary-500">Email</p>
+              <p class="text-sm font-medium text-secondary-900">{{ selectedClient()?.email }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-100 text-success-600">
+              <mat-icon>phone</mat-icon>
+            </div>
+            <div>
+              <p class="text-xs text-secondary-500">Téléphone</p>
+              <p class="text-sm font-medium text-secondary-900">{{ selectedClient()?.phone }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary-50">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-100 text-warning-600">
+              <mat-icon>location_on</mat-icon>
+            </div>
+            <div>
+              <p class="text-xs text-secondary-500">Adresse</p>
+              <p class="text-sm font-medium text-secondary-900">{{ selectedClient()?.address }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Parcels Loading -->
+        <div *ngIf="loadingClientDetails()" class="flex items-center justify-center gap-3 py-12 text-secondary-500">
+          <div class="h-8 w-8 rounded-full border-3 border-primary-200 border-t-primary-600 animate-spin"></div>
+          <span>Chargement des colis...</span>
+        </div>
+
+        <!-- Parcels Tabs -->
+        <mat-tab-group *ngIf="!loadingClientDetails()" class="mt-4">
+          <!-- In Progress Parcels Tab -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <div class="flex items-center gap-2">
+                <mat-icon>local_shipping</mat-icon>
+                <span>En cours ({{ clientInProgressParcels().length }})</span>
+              </div>
+            </ng-template>
+            <div class="py-4">
+              <div *ngIf="clientInProgressParcels().length === 0" class="text-center py-12 text-secondary-500">
+                <mat-icon class="text-5xl mb-3">inbox</mat-icon>
+                <p>Aucun colis en cours</p>
+              </div>
+              <div *ngIf="clientInProgressParcels().length > 0" class="overflow-x-auto">
+                <table mat-table [dataSource]="clientInProgressParcels()" class="w-full">
+                  <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">ID</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.id | slice:0:8 }}...</td>
+                  </ng-container>
+                  <ng-container matColumnDef="description">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Description</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.description || 'N/A' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="destination">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Destination</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.destinationCity }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Statut</th>
+                    <td mat-cell *matCellDef="let parcel">
+                      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            [ngClass]="{
+                              'bg-secondary-100 text-secondary-700': parcel.status === 'CREATED',
+                              'bg-primary-100 text-primary-700': parcel.status === 'COLLECTED' || parcel.status === 'IN_TRANSIT',
+                              'bg-warning-100 text-warning-700': parcel.status === 'IN_STOCK',
+                              'bg-success-100 text-success-700': parcel.status === 'DELIVERED'
+                            }">
+                        {{ getStatusLabel(parcel.status) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="priority">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Priorité</th>
+                    <td mat-cell *matCellDef="let parcel">
+                      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            [ngClass]="{
+                              'bg-secondary-100 text-secondary-700': parcel.priority === 'NORMAL',
+                              'bg-warning-100 text-warning-700': parcel.priority === 'URGENT',
+                              'bg-danger-100 text-danger-700': parcel.priority === 'EXPRESS'
+                            }">
+                        {{ getPriorityLabel(parcel.priority) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="parcelColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: parcelColumns;" class="hover:!bg-secondary-50 transition-colors"></tr>
+                </table>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Delivered Parcels Tab -->
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <div class="flex items-center gap-2">
+                <mat-icon>check_circle</mat-icon>
+                <span>Livrés ({{ clientDeliveredParcels().length }})</span>
+              </div>
+            </ng-template>
+            <div class="py-4">
+              <div *ngIf="clientDeliveredParcels().length === 0" class="text-center py-12 text-secondary-500">
+                <mat-icon class="text-5xl mb-3">inbox</mat-icon>
+                <p>Aucun colis livré</p>
+              </div>
+              <div *ngIf="clientDeliveredParcels().length > 0" class="overflow-x-auto">
+                <table mat-table [dataSource]="clientDeliveredParcels()" class="w-full">
+                  <ng-container matColumnDef="id">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">ID</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.id | slice:0:8 }}...</td>
+                  </ng-container>
+                  <ng-container matColumnDef="description">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Description</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.description || 'N/A' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="destination">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Destination</th>
+                    <td mat-cell *matCellDef="let parcel" class="!text-secondary-700">{{ parcel.destinationCity }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Statut</th>
+                    <td mat-cell *matCellDef="let parcel">
+                      <span class="inline-flex items-center rounded-full bg-success-100 text-success-700 px-2.5 py-0.5 text-xs font-medium">
+                        {{ getStatusLabel(parcel.status) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="priority">
+                    <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold">Priorité</th>
+                    <td mat-cell *matCellDef="let parcel">
+                      <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                            [ngClass]="{
+                              'bg-secondary-100 text-secondary-700': parcel.priority === 'NORMAL',
+                              'bg-warning-100 text-warning-700': parcel.priority === 'URGENT',
+                              'bg-danger-100 text-danger-700': parcel.priority === 'EXPRESS'
+                            }">
+                        {{ getPriorityLabel(parcel.priority) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="parcelColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: parcelColumns;" class="hover:!bg-secondary-50 transition-colors"></tr>
+                </table>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div *ngIf="!isEditing() && !isViewingDetails()" class="mb-6 rounded-2xl bg-white p-4 shadow-card border border-secondary-100">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Rechercher un client</mat-label>
+        <input matInput
+               [ngModel]="searchTerm()"
+               (ngModelChange)="searchTerm.set($event); onSearch()"
+               placeholder="Nom, email, téléphone...">
+        <mat-icon matPrefix class="text-secondary-400">search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="flex flex-col items-center justify-center py-24 gap-4">
+      <div class="h-12 w-12 rounded-full border-4 border-primary-200 border-t-primary-600 animate-spin"></div>
+      <p class="text-secondary-500 font-medium">Chargement des clients...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error()" class="flex flex-col items-center justify-center py-24 gap-4">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-danger-100">
+        <mat-icon class="text-danger-600 text-3xl">error_outline</mat-icon>
+      </div>
+      <p class="text-secondary-700 font-medium">{{ error() }}</p>
+      <button (click)="refresh()"
+              class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Clients Table -->
+    <div *ngIf="!loading() && !error() && !isEditing() && !isViewingDetails()"
+         class="rounded-2xl bg-white shadow-card border border-secondary-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table mat-table [dataSource]="filteredClients()" class="w-full">
+          <!-- Name Column -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Nom Complet</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+                  <mat-icon class="text-lg">person</mat-icon>
+                </div>
+                <span class="font-medium text-secondary-900">{{ client.firstName }} {{ client.lastName }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Email Column -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Email</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="flex items-center gap-2 text-secondary-600">
+                <mat-icon class="text-lg text-secondary-400">email</mat-icon>
+                <span>{{ client.email }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Phone Column -->
+          <ng-container matColumnDef="phone">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Téléphone</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="flex items-center gap-2 text-secondary-600">
+                <mat-icon class="text-lg text-secondary-400">phone</mat-icon>
+                <span>{{ client.phone }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Address Column -->
+          <ng-container matColumnDef="address">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Adresse</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="flex items-center gap-2 text-secondary-600">
+                <mat-icon class="text-lg text-secondary-400">location_on</mat-icon>
+                <span class="truncate max-w-[200px]">{{ client.address }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Parcels Count Column -->
+          <ng-container matColumnDef="parcelsCount">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Colis</th>
+            <td mat-cell *matCellDef="let client">
+              <span class="inline-flex items-center rounded-full bg-primary-100 text-primary-700 px-2.5 py-0.5 text-xs font-semibold">
+                {{ client.parcelsCount || 0 }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="!bg-secondary-50 !text-secondary-600 !font-semibold !text-sm !uppercase !tracking-wide">Actions</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="flex items-center gap-1">
+                <button (click)="viewClientDetails(client)"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg text-primary-600 hover:bg-primary-50 transition-colors"
+                        matTooltip="Voir détails">
+                  <mat-icon class="text-lg">visibility</mat-icon>
+                </button>
+                <button (click)="editClient(client)"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg text-warning-600 hover:bg-warning-50 transition-colors"
+                        matTooltip="Modifier">
+                  <mat-icon class="text-lg">edit</mat-icon>
+                </button>
+                <button (click)="deleteClient(client)"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg text-danger-600 hover:bg-danger-50 transition-colors"
+                        matTooltip="Supprimer">
+                  <mat-icon class="text-lg">delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="hover:!bg-secondary-50 transition-colors"></tr>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredClients().length === 0" class="text-center py-16 text-secondary-500">
+        <mat-icon class="text-6xl mb-4">inbox</mat-icon>
+        <p class="text-lg font-medium">Aucun client trouvé</p>
+        <p class="text-sm">Essayez de modifier vos critères de recherche</p>
+      </div>
+    </div>
+  </div>
+</div>

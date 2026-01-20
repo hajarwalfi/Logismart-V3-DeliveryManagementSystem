@@ -1,0 +1,263 @@
+<!-- Hero Section with Gradient Background -->
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+  <!-- Navigation -->
+  <nav class="container mx-auto px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <mat-icon class="text-white text-3xl">local_shipping</mat-icon>
+        <span class="text-2xl font-bold text-white">Logismart</span>
+      </div>
+      <button mat-stroked-button class="text-white border-white/50 hover:bg-white/10" (click)="goToLogin()">
+        <mat-icon class="mr-2">login</mat-icon>
+        Connexion
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-6 py-12">
+    <!-- Hero Text -->
+    <div class="text-center mb-12">
+      <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
+        Suivez vos colis<br>
+        <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+          en temps reel
+        </span>
+      </h1>
+      <p class="text-xl text-white/80 max-w-2xl mx-auto">
+        Logismart vous permet de suivre l'acheminement de vos colis a travers tout le Maroc.
+        Entrez simplement votre numero de suivi et votre email pour commencer.
+      </p>
+    </div>
+
+    <!-- Tracking Form Card -->
+    @if (!showResult()) {
+      <mat-card class="max-w-xl mx-auto shadow-2xl rounded-2xl overflow-hidden">
+        <mat-card-content class="p-8">
+          <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <mat-icon class="text-white text-3xl">search</mat-icon>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Suivre mon colis</h2>
+            <p class="text-gray-500 mt-2">Entrez les informations de suivi</p>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Parcel ID Input -->
+            <mat-form-field class="w-full" appearance="outline">
+              <mat-label>Numero de suivi</mat-label>
+              <input matInput [(ngModel)]="parcelId" placeholder="ex: abc123-def456-ghi789" (keyup.enter)="onTrack()">
+              <mat-icon matPrefix class="text-gray-400 mr-2">qr_code</mat-icon>
+              <mat-hint>Le numero de suivi vous a ete envoye par email</mat-hint>
+            </mat-form-field>
+
+            <!-- Email Input -->
+            <mat-form-field class="w-full" appearance="outline">
+              <mat-label>Email du destinataire</mat-label>
+              <input matInput type="email" [(ngModel)]="email" placeholder="exemple@email.com" (keyup.enter)="onTrack()">
+              <mat-icon matPrefix class="text-gray-400 mr-2">email</mat-icon>
+              <mat-hint>L'email utilise lors de la creation du colis</mat-hint>
+            </mat-form-field>
+
+            <!-- Error Message -->
+            @if (error()) {
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center text-red-700">
+                <mat-icon class="mr-2">error</mat-icon>
+                {{ error() }}
+              </div>
+            }
+
+            <!-- Track Button -->
+            <button
+              mat-raised-button
+              color="primary"
+              class="w-full h-14 text-lg font-semibold rounded-xl"
+              (click)="onTrack()"
+              [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="24" class="inline-block mr-2"></mat-spinner>
+                Recherche en cours...
+              } @else {
+                <ng-container>
+                  <mat-icon class="mr-2">search</mat-icon>
+                  Suivre mon colis
+                </ng-container>
+              }
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Tracking Result -->
+    @if (showResult() && trackingResult()) {
+      <div class="max-w-4xl mx-auto">
+        <!-- Back Button -->
+        <button mat-button class="text-white mb-6" (click)="clearResult()">
+          <mat-icon class="mr-2">arrow_back</mat-icon>
+          Nouvelle recherche
+        </button>
+
+        <!-- Result Card -->
+        <mat-card class="shadow-2xl rounded-2xl overflow-hidden">
+          <!-- Header with Status -->
+          <div class="p-6 text-white" [class]="getStatusColor(trackingResult()!.status)">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-white/80 text-sm uppercase tracking-wide">Statut actuel</p>
+                <div class="flex items-center mt-1">
+                  <mat-icon class="text-3xl mr-2">{{ getStatusIcon(trackingResult()!.status) }}</mat-icon>
+                  <span class="text-3xl font-bold">{{ trackingResult()!.statusDisplay }}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-white/80 text-sm">Priorite</p>
+                <span class="text-lg font-semibold">{{ trackingResult()!.priorityDisplay }}</span>
+              </div>
+            </div>
+          </div>
+
+          <mat-card-content class="p-6">
+            <!-- Parcel Info Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div class="space-y-4">
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Numero de suivi</p>
+                  <p class="text-lg font-mono font-semibold text-gray-800">{{ trackingResult()!.parcelId }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Description</p>
+                  <p class="text-gray-800">{{ trackingResult()!.description || 'Non specifiee' }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Poids</p>
+                  <p class="text-gray-800">{{ trackingResult()!.weight }} kg</p>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Destinataire</p>
+                  <p class="text-lg font-semibold text-gray-800">{{ trackingResult()!.recipientName }}</p>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Ville de destination</p>
+                  <div class="flex items-center">
+                    <mat-icon class="text-gray-400 mr-1">location_on</mat-icon>
+                    <span class="text-gray-800">{{ trackingResult()!.destinationCity }}</span>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Expediteur</p>
+                  <p class="text-gray-800">{{ trackingResult()!.senderName }}</p>
+                </div>
+              </div>
+            </div>
+
+            <mat-divider class="my-6"></mat-divider>
+
+            <!-- Progress Timeline -->
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Progression de la livraison</h3>
+            <div class="relative">
+              <!-- Timeline Line -->
+              <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+              <!-- Timeline Steps -->
+              <div class="space-y-6">
+                @for (step of timelineSteps; track step.status; let i = $index) {
+                  <div class="relative flex items-center">
+                    <!-- Step Circle -->
+                    <div
+                      class="relative z-10 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300"
+                      [class]="isStepCompleted(i) ? getStatusColor(step.status) + ' text-white shadow-lg' : 'bg-gray-200 text-gray-400'">
+                      <mat-icon>{{ step.icon }}</mat-icon>
+                    </div>
+
+                    <!-- Step Content -->
+                    <div class="ml-4 flex-1">
+                      <p class="font-semibold" [class]="isStepCompleted(i) ? 'text-gray-800' : 'text-gray-400'">
+                        {{ step.label }}
+                      </p>
+                      @if (isStepActive(i)) {
+                        <p class="text-sm text-indigo-600 font-medium">Statut actuel</p>
+                      }
+                    </div>
+
+                    <!-- Checkmark for completed -->
+                    @if (isStepCompleted(i) && !isStepActive(i)) {
+                      <mat-icon class="text-emerald-500">check_circle</mat-icon>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <mat-divider class="my-6"></mat-divider>
+
+            <!-- Delivery History -->
+            @if (trackingResult()!.history && trackingResult()!.history.length > 0) {
+              <h3 class="text-xl font-bold text-gray-800 mb-4">Historique detaille</h3>
+              <div class="space-y-3">
+                @for (event of trackingResult()!.history; track event.id) {
+                  <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center mr-4"
+                         [class]="getStatusColor(event.status) + ' text-white'">
+                      <mat-icon class="text-sm">{{ getStatusIcon(event.status) }}</mat-icon>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center justify-between">
+                        <p class="font-semibold text-gray-800">{{ event.statusDisplay }}</p>
+                        <p class="text-sm text-gray-500">{{ event.changedAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                      </div>
+                      @if (event.comment) {
+                        <p class="text-sm text-gray-600 mt-1">{{ event.comment }}</p>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
+
+    <!-- Features Section -->
+    @if (!showResult()) {
+      <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="text-white text-3xl">speed</mat-icon>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Suivi en temps reel</h3>
+          <p class="text-white/70">Suivez votre colis a chaque etape de son parcours</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="text-white text-3xl">security</mat-icon>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Securise</h3>
+          <p class="text-white/70">Vos donnees sont protegees et accessibles uniquement par vous</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="text-white text-3xl">notifications_active</mat-icon>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Notifications</h3>
+          <p class="text-white/70">Recevez des alertes a chaque changement de statut</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Footer -->
+  <footer class="container mx-auto px-6 py-8 mt-12 border-t border-white/10">
+    <div class="flex flex-col md:flex-row items-center justify-between text-white/60 text-sm">
+      <p>&copy; 2025 Logismart - Tous droits reserves</p>
+      <div class="flex space-x-6 mt-4 md:mt-0">
+        <a href="#" class="hover:text-white transition">Conditions d'utilisation</a>
+        <a href="#" class="hover:text-white transition">Politique de confidentialite</a>
+        <a href="#" class="hover:text-white transition">Contact</a>
+      </div>
+    </div>
+  </footer>
+</div>

@@ -1,0 +1,278 @@
+<mat-toolbar color="primary" class="shadow-md">
+  <mat-icon class="mr-2">admin_panel_settings</mat-icon>
+  <span class="text-xl font-bold">Logismart - Espace Manager</span>
+  <span class="flex-1"></span>
+  <span class="text-sm mr-4">{{ currentUser()?.username }}</span>
+  <button mat-button (click)="onLogout()" class="hover:bg-white/10">
+    <mat-icon>logout</mat-icon>
+    Deconnexion
+  </button>
+</mat-toolbar>
+
+<div class="container mx-auto p-6 max-w-7xl">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Tableau de bord</h1>
+    <p class="text-gray-600">Vue d'ensemble de votre systeme de livraison</p>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-20">
+      <mat-spinner diameter="60"></mat-spinner>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error()) {
+    <mat-card class="bg-red-50 border-l-4 border-red-500 mb-6">
+      <mat-card-content class="p-4 flex items-center">
+        <mat-icon class="text-red-500 mr-3">error</mat-icon>
+        <span class="text-red-700">{{ error() }}</span>
+        <button mat-stroked-button color="warn" (click)="loadStatistics()" class="ml-auto">
+          Reessayer
+        </button>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (!loading() && stats()) {
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+      <!-- Total Parcels -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" (click)="navigateToParcels()">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-indigo-600">inventory_2</mat-icon>
+          </div>
+          <p class="text-2xl font-bold text-gray-800">{{ stats()!.totalParcels }}</p>
+          <p class="text-xs text-gray-500">Total Colis</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Delivery Persons -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" (click)="navigateToDeliveryPersons()">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-green-600">people</mat-icon>
+          </div>
+          <p class="text-2xl font-bold text-gray-800">{{ stats()!.totalDeliveryPersons }}</p>
+          <p class="text-xs text-gray-500">Livreurs</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Zones -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" (click)="navigateToZones()">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-purple-600">map</mat-icon>
+          </div>
+          <p class="text-2xl font-bold text-gray-800">{{ stats()!.totalZones }}</p>
+          <p class="text-xs text-gray-500">Zones</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Clients -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" (click)="navigateToClients()">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-blue-600">business</mat-icon>
+          </div>
+          <p class="text-2xl font-bold text-gray-800">{{ stats()!.totalSenderClients }}</p>
+          <p class="text-xs text-gray-500">Clients</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Unassigned -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow" [class.bg-orange-50]="stats()!.unassignedParcels > 0">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-orange-600">pending_actions</mat-icon>
+          </div>
+          <p class="text-2xl font-bold" [class.text-orange-600]="stats()!.unassignedParcels > 0">{{ stats()!.unassignedParcels }}</p>
+          <p class="text-xs text-gray-500">Non assignes</p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- High Priority -->
+      <mat-card class="shadow-lg hover:shadow-xl transition-shadow" [class.bg-red-50]="stats()!.highPriorityPending > 0">
+        <mat-card-content class="p-4 text-center">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <mat-icon class="text-red-600">priority_high</mat-icon>
+          </div>
+          <p class="text-2xl font-bold" [class.text-red-600]="stats()!.highPriorityPending > 0">{{ stats()!.highPriorityPending }}</p>
+          <p class="text-xs text-gray-500">Urgents</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Alerts Section -->
+    @if (stats()!.unassignedParcels > 0 || stats()!.highPriorityPending > 0) {
+      <div class="mb-8 space-y-3">
+        @if (stats()!.highPriorityPending > 0) {
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-center">
+            <mat-icon class="text-red-500 mr-3">warning</mat-icon>
+            <div class="flex-1">
+              <p class="font-semibold text-red-800">Colis urgents en attente</p>
+              <p class="text-red-600 text-sm">{{ stats()!.highPriorityPending }} colis EXPRESS en attente de traitement</p>
+            </div>
+            <button mat-raised-button color="warn" (click)="navigateToParcels()">
+              Voir
+            </button>
+          </div>
+        }
+        @if (stats()!.unassignedParcels > 0) {
+          <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg flex items-center">
+            <mat-icon class="text-orange-500 mr-3">assignment_late</mat-icon>
+            <div class="flex-1">
+              <p class="font-semibold text-orange-800">Colis non assignes</p>
+              <p class="text-orange-600 text-sm">{{ stats()!.unassignedParcels }} colis en attente d'assignation a un livreur</p>
+            </div>
+            <button mat-raised-button color="accent" (click)="navigateToParcels()">
+              Assigner
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Parcels by Status -->
+      <mat-card class="shadow-lg">
+        <mat-card-header class="border-b pb-4">
+          <mat-card-title class="flex items-center text-lg">
+            <mat-icon class="mr-2 text-indigo-600">donut_large</mat-icon>
+            Colis par statut
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="p-6">
+          <div class="space-y-4">
+            <!-- CREATED -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-gray-500 mr-3"></div>
+                <span class="text-gray-700">Crees</span>
+              </div>
+              <span class="font-bold text-gray-800">{{ getStatusCount('CREATED') }}</span>
+            </div>
+            <!-- COLLECTED -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
+                <span class="text-gray-700">Collectes</span>
+              </div>
+              <span class="font-bold text-blue-600">{{ getStatusCount('COLLECTED') }}</span>
+            </div>
+            <!-- IN_STOCK -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-yellow-500 mr-3"></div>
+                <span class="text-gray-700">En stock</span>
+              </div>
+              <span class="font-bold text-yellow-600">{{ getStatusCount('IN_STOCK') }}</span>
+            </div>
+            <!-- IN_TRANSIT -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-orange-500 mr-3"></div>
+                <span class="text-gray-700">En transit</span>
+              </div>
+              <span class="font-bold text-orange-600">{{ getStatusCount('IN_TRANSIT') }}</span>
+            </div>
+            <!-- DELIVERED -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
+                <span class="text-gray-700">Livres</span>
+              </div>
+              <span class="font-bold text-green-600">{{ getStatusCount('DELIVERED') }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Parcels by Priority -->
+      <mat-card class="shadow-lg">
+        <mat-card-header class="border-b pb-4">
+          <mat-card-title class="flex items-center text-lg">
+            <mat-icon class="mr-2 text-purple-600">flag</mat-icon>
+            Colis par priorite
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="p-6">
+          <div class="space-y-4">
+            <!-- NORMAL -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <mat-icon class="text-gray-500 mr-2">schedule</mat-icon>
+                <span class="text-gray-700">Normal</span>
+              </div>
+              <span class="font-bold text-gray-600">{{ getPriorityCount('NORMAL') }}</span>
+            </div>
+            <!-- URGENT -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <mat-icon class="text-orange-500 mr-2">schedule_send</mat-icon>
+                <span class="text-gray-700">Urgent</span>
+              </div>
+              <span class="font-bold text-orange-600">{{ getPriorityCount('URGENT') }}</span>
+            </div>
+            <!-- EXPRESS -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <mat-icon class="text-red-500 mr-2">bolt</mat-icon>
+                <span class="text-gray-700">Express</span>
+              </div>
+              <span class="font-bold text-red-600">{{ getPriorityCount('EXPRESS') }}</span>
+            </div>
+          </div>
+
+          <mat-divider class="my-6"></mat-divider>
+
+          <!-- Additional Stats -->
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p class="text-2xl font-bold text-gray-800">{{ stats()!.averageParcelsPerDeliveryPerson | number:'1.1-1' }}</p>
+              <p class="text-xs text-gray-500">Moy. colis/livreur</p>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-800">{{ stats()!.averageWeight | number:'1.1-1' }} kg</p>
+              <p class="text-xs text-gray-500">Poids moyen</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <mat-card class="shadow-lg">
+      <mat-card-header class="border-b pb-4">
+        <mat-card-title class="flex items-center text-lg">
+          <mat-icon class="mr-2 text-green-600">flash_on</mat-icon>
+          Actions rapides
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="p-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button mat-raised-button color="primary" (click)="navigateToParcels()" class="h-20 flex flex-col items-center justify-center">
+            <mat-icon class="mb-1">inventory_2</mat-icon>
+            <span>Gerer les colis</span>
+          </button>
+          <button mat-raised-button color="accent" (click)="navigateToDeliveryPersons()" class="h-20 flex flex-col items-center justify-center">
+            <mat-icon class="mb-1">people</mat-icon>
+            <span>Gerer les livreurs</span>
+          </button>
+          <button mat-raised-button (click)="navigateToZones()" class="h-20 flex flex-col items-center justify-center bg-purple-600 text-white">
+            <mat-icon class="mb-1">map</mat-icon>
+            <span>Gerer les zones</span>
+          </button>
+          <button mat-raised-button (click)="navigateToClients()" class="h-20 flex flex-col items-center justify-center bg-blue-600 text-white">
+            <mat-icon class="mb-1">business</mat-icon>
+            <span>Gerer les clients</span>
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

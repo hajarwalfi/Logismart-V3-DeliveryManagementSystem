@@ -1,0 +1,207 @@
+<mat-toolbar color="primary" class="shadow-md">
+  <button mat-icon-button (click)="goBack()" matTooltip="Retour au dashboard">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <mat-icon class="mr-2">map</mat-icon>
+  <span class="text-xl font-bold">Gestion des Zones</span>
+  <span class="flex-1"></span>
+  <span class="text-sm mr-4">{{ currentUser()?.username }}</span>
+  <button mat-button (click)="onLogout()" class="hover:bg-white/10">
+    <mat-icon>logout</mat-icon>
+    Deconnexion
+  </button>
+</mat-toolbar>
+
+<div class="container mx-auto p-6 max-w-7xl">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Liste des Zones</h1>
+      <p class="text-gray-600">Gerez les zones de livraison</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <p class="text-sm text-gray-500">Total: {{ totalElements() }} zones</p>
+      <button mat-raised-button color="primary" (click)="startCreating()" [disabled]="isCreating() || isEditing()">
+        <mat-icon>add</mat-icon>
+        Nouvelle Zone
+      </button>
+    </div>
+  </div>
+
+  <!-- Create/Edit Form -->
+  @if (isCreating() || isEditing()) {
+    <mat-card class="mb-6 shadow-lg">
+      <mat-card-content class="p-4">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+          {{ isCreating() ? 'Creer une nouvelle zone' : 'Modifier la zone' }}
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field class="w-full">
+            <mat-label>Nom de la zone</mat-label>
+            <input matInput [ngModel]="newZoneName()" (ngModelChange)="newZoneName.set($event)" placeholder="Ex: Casablanca Centre">
+            <mat-icon matPrefix>label</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field class="w-full">
+            <mat-label>Code Postal</mat-label>
+            <input matInput [ngModel]="newZonePostalCode()" (ngModelChange)="newZonePostalCode.set($event)" placeholder="Ex: 20000">
+            <mat-icon matPrefix>pin</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button mat-stroked-button (click)="isCreating() ? cancelCreate() : cancelEdit()">
+            <mat-icon>close</mat-icon>
+            Annuler
+          </button>
+          @if (isCreating()) {
+            <button mat-raised-button color="primary" (click)="createZone()" [disabled]="!newZoneName() || !newZonePostalCode()">
+              <mat-icon>add</mat-icon>
+              Creer
+            </button>
+          } @else {
+            <button mat-raised-button color="primary" (click)="updateZone()" [disabled]="!newZoneName() || !newZonePostalCode()">
+              <mat-icon>save</mat-icon>
+              Enregistrer
+            </button>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <!-- Filters -->
+  <mat-card class="mb-6 shadow-lg">
+    <mat-card-content class="p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-800">Filtres</h2>
+        <button mat-stroked-button color="warn" (click)="clearFilters()">
+          <mat-icon class="mr-1">clear</mat-icon>
+          Reinitialiser
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <mat-form-field class="w-full">
+          <mat-label>Rechercher</mat-label>
+          <input matInput [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Nom, code postal..." (input)="applyFilters()">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (!loading() && paginatedZones().length > 0) {
+    <mat-card class="shadow-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table mat-table [dataSource]="paginatedZones()" class="w-full">
+          <!-- Name -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Zone</th>
+            <td mat-cell *matCellDef="let zone">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <mat-icon class="text-blue-600">map</mat-icon>
+                </div>
+                <div>
+                  <div class="font-medium">{{ zone.name }}</div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Postal Code -->
+          <ng-container matColumnDef="postalCode">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Code Postal</th>
+            <td mat-cell *matCellDef="let zone">
+              <div class="flex items-center">
+                <mat-icon class="text-gray-400 mr-1 text-sm">pin</mat-icon>
+                <span>{{ zone.postalCode }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Delivery Persons Count -->
+          <ng-container matColumnDef="deliveryPersons">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Livreurs</th>
+            <td mat-cell *matCellDef="let zone">
+              <div class="flex items-center">
+                <mat-icon class="text-indigo-500 mr-1 text-sm">people</mat-icon>
+                <span>{{ zone.deliveryPersonCount || 0 }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Parcels Count -->
+          <ng-container matColumnDef="parcels">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Colis</th>
+            <td mat-cell *matCellDef="let zone">
+              <div class="flex items-center">
+                <mat-icon class="text-orange-500 mr-1 text-sm">inventory_2</mat-icon>
+                <span>{{ zone.parcelCount || 0 }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="font-bold">Actions</th>
+            <td mat-cell *matCellDef="let zone">
+              <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #actionMenu="matMenu">
+                <button mat-menu-item (click)="startEditing(zone)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Modifier</span>
+                </button>
+                <mat-divider></mat-divider>
+                <button mat-menu-item class="text-red-600" (click)="deleteZone(zone)">
+                  <mat-icon class="text-red-600">delete</mat-icon>
+                  <span>Supprimer</span>
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              class="hover:bg-gray-50"
+              [class.bg-blue-50]="editingZone()?.id === row.id">
+          </tr>
+        </table>
+      </div>
+
+      <mat-paginator
+        [length]="totalElements()"
+        [pageSize]="pageSize()"
+        [pageIndex]="currentPage()"
+        [pageSizeOptions]="[10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card>
+  }
+
+  <!-- No Results -->
+  @if (!loading() && paginatedZones().length === 0) {
+    <mat-card class="shadow-lg text-center py-12">
+      <mat-icon class="text-gray-400 text-6xl mb-4">map</mat-icon>
+      <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucune zone trouvee</h3>
+      <p class="text-gray-500 mb-4">Modifiez vos filtres ou creez une nouvelle zone.</p>
+      <button mat-raised-button color="primary" (click)="startCreating()">
+        <mat-icon>add</mat-icon>
+        Creer une zone
+      </button>
+    </mat-card>
+  }
+</div>

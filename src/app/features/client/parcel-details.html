@@ -1,0 +1,247 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="container mx-auto p-4 max-w-7xl flex items-center">
+      <button mat-icon-button (click)="goBack()" class="mr-4">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800">Détails du Colis</h1>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (!loading() && parcel()) {
+    <div class="container mx-auto p-6 max-w-7xl">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content - Left Side -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Status Card -->
+          <mat-card class="shadow-lg">
+            <mat-card-content class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-xl font-bold text-gray-800 mb-2">Statut Actuel</h2>
+                  <div class="flex items-center gap-3">
+                    <mat-chip [class]="getStatusColor(parcel()!.status) + ' text-white text-lg'">
+                      <mat-icon class="mr-2">{{ getStatusIcon(parcel()!.status) }}</mat-icon>
+                      {{ parcel()!.statusDisplay }}
+                    </mat-chip>
+                    <div [class]="getPriorityColor(parcel()!.priority) + ' flex items-center'">
+                      <mat-icon class="mr-1">{{ getPriorityIcon(parcel()!.priority) }}</mat-icon>
+                      <span class="font-semibold">{{ parcel()!.priorityDisplay }}</span>
+                    </div>
+                  </div>
+                </div>
+                <button mat-icon-button (click)="copyTrackingId()" matTooltip="Copier l'ID de suivi">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+
+              <!-- Timeline Progress -->
+              <div class="mb-6">
+                <h3 class="text-sm font-semibold text-gray-600 mb-4">Progression du colis</h3>
+                <div class="relative">
+                  <div class="flex justify-between items-center">
+                    @for (step of timelineSteps; track step.status; let i = $index) {
+                      <div class="flex flex-col items-center flex-1 relative">
+                        <!-- Circle -->
+                        <div
+                          [class]="
+                            isStepCompleted(i)
+                              ? 'bg-green-500 text-white'
+                              : isStepActive(i)
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-gray-300 text-gray-500'
+                          "
+                          class="w-12 h-12 rounded-full flex items-center justify-center z-10 shadow-md transition-all duration-300">
+                          <mat-icon>{{ step.icon }}</mat-icon>
+                        </div>
+                        <!-- Label -->
+                        <span
+                          [class]="
+                            isStepCompleted(i) || isStepActive(i)
+                              ? 'text-gray-800 font-semibold'
+                              : 'text-gray-500'
+                          "
+                          class="text-xs mt-2 text-center">
+                          {{ step.label }}
+                        </span>
+                        <!-- Line -->
+                        @if (i < timelineSteps.length - 1) {
+                          <div
+                            [class]="isStepCompleted(i) ? 'bg-green-500' : 'bg-gray-300'"
+                            class="absolute top-6 left-1/2 w-full h-1 transition-all duration-300"
+                            style="transform: translateY(-50%);">
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Products Info -->
+              @if (parcel()!.productCount && parcel()!.productCount! > 0) {
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center">
+                  <mat-icon class="text-blue-600 mr-3">inventory</mat-icon>
+                  <div>
+                    <p class="text-sm font-semibold text-gray-700">{{ parcel()!.productCount }} produit(s)</p>
+                    <p class="text-blue-600 font-bold">Valeur: {{ parcel()!.formattedTotalValue }}</p>
+                  </div>
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Tracking History -->
+          <mat-card class="shadow-lg">
+            <mat-card-header class="bg-gray-50 p-4">
+              <mat-card-title class="text-lg font-bold text-gray-800">
+                <mat-icon class="align-middle mr-2">history</mat-icon>
+                Historique de suivi
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="p-0">
+              @if (trackingHistory().length > 0) {
+                <div class="divide-y">
+                  @for (history of trackingHistory(); track history.id) {
+                    <div class="p-4 hover:bg-gray-50 transition-colors">
+                      <div class="flex items-start">
+                        <div [class]="getStatusColor(history.status)" class="w-10 h-10 rounded-full flex items-center justify-center text-white mr-4 flex-shrink-0">
+                          <mat-icon class="text-sm">{{ getStatusIcon(history.status) }}</mat-icon>
+                        </div>
+                        <div class="flex-1">
+                          <div class="flex items-center justify-between mb-1">
+                            <h4 class="font-semibold text-gray-800">{{ history.statusDisplay }}</h4>
+                            <span class="text-sm text-gray-500">{{ history.formattedChangedAt }}</span>
+                          </div>
+                          @if (history.comment) {
+                            <p class="text-sm text-gray-600 mt-1">{{ history.comment }}</p>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="p-8 text-center text-gray-500">
+                  <mat-icon class="text-4xl mb-2">history_toggle_off</mat-icon>
+                  <p>Aucun historique disponible</p>
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Sidebar - Right Side -->
+        <div class="space-y-6">
+          <!-- Parcel Info -->
+          <mat-card class="shadow-lg">
+            <mat-card-header class="bg-gray-50 p-4">
+              <mat-card-title class="text-lg font-bold text-gray-800">Informations</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="p-4 space-y-4">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">ID de suivi</p>
+                <p class="font-mono text-xs break-all text-gray-700">{{ parcel()!.id }}</p>
+              </div>
+              <mat-divider></mat-divider>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Description</p>
+                <p class="text-sm text-gray-700">{{ parcel()!.description }}</p>
+              </div>
+              <mat-divider></mat-divider>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Poids</p>
+                <p class="text-sm font-semibold text-gray-700">{{ parcel()!.formattedWeight }}</p>
+              </div>
+              <mat-divider></mat-divider>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Créé le</p>
+                <p class="text-sm text-gray-700">{{ parcel()!.createdAt }}</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Recipient Info -->
+          <mat-card class="shadow-lg">
+            <mat-card-header class="bg-gray-50 p-4">
+              <mat-card-title class="text-lg font-bold text-gray-800">
+                <mat-icon class="align-middle mr-2">person</mat-icon>
+                Destinataire
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="p-4 space-y-3">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Nom complet</p>
+                <p class="font-semibold text-gray-800">{{ parcel()!.recipientName }}</p>
+              </div>
+              <mat-divider></mat-divider>
+              <div class="flex items-center text-blue-600 mt-2">
+                <mat-icon class="mr-1 text-sm">location_city</mat-icon>
+                <span class="font-semibold">{{ parcel()!.destinationCity }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Sender Info -->
+          <mat-card class="shadow-lg">
+            <mat-card-header class="bg-gray-50 p-4">
+              <mat-card-title class="text-lg font-bold text-gray-800">
+                <mat-icon class="align-middle mr-2">person_outline</mat-icon>
+                Expéditeur
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="p-4 space-y-3">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Nom complet</p>
+                <p class="font-semibold text-gray-800">{{ parcel()!.senderClientName }}</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Delivery Person (if assigned) -->
+          @if (parcel()!.deliveryPersonId) {
+            <mat-card class="shadow-lg">
+              <mat-card-header class="bg-gray-50 p-4">
+                <mat-card-title class="text-lg font-bold text-gray-800">
+                  <mat-icon class="align-middle mr-2">local_shipping</mat-icon>
+                  Livreur
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="p-4 space-y-3">
+                <div>
+                  <p class="font-semibold text-gray-800">{{ parcel()!.deliveryPersonName }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <!-- Zone (if assigned) -->
+          @if (parcel()!.zoneId) {
+            <mat-card class="shadow-lg">
+              <mat-card-header class="bg-gray-50 p-4">
+                <mat-card-title class="text-lg font-bold text-gray-800">
+                  <mat-icon class="align-middle mr-2">map</mat-icon>
+                  Zone de livraison
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="p-4 space-y-3">
+                <div>
+                  <p class="font-semibold text-gray-800">{{ parcel()!.zoneName }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
